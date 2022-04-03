@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import "./Home.css";
 import { Logo } from '../images/Netflix';
 import { ConnectButton, Icon, TabList, Tab, Button, Modal, useNotification } from 'web3uikit';
@@ -9,9 +9,32 @@ import { useMoralis } from 'react-moralis';
 
 const Home = () => {
 
-  const { isAuthenticated } = useMoralis();
+  const { isAuthenticated, Moralis, account } = useMoralis();
+  const [visible, setVisible] = useState(false);
+  const [selectedFilm, setSelectedFilm] = useState();
+  const [myMovies, setMyMovies] = useState([]);
+
 
   const dispatch = useNotification();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const fetchMyList = async () => {
+
+        await Moralis.start({
+          serverUrl: "https://0xwb5czzec4o.usemoralis.com:2053/server",
+          appId: "6ZGjzPYaDPSI6M5n5Z65uFgE2oBSuHDrGW7zf1Da",
+        }); //if getting errors add this 
+
+        const theList = await Moralis.Cloud.run("getMyList", { addrs: account });
+        const filtered = movies.filter(movie => theList.includes(movie.Name));
+        setMyMovies(filtered);
+      }
+
+      fetchMyList();
+    }
+
+  }, [account])
 
   const handleNewNotification = () => {
     dispatch({
@@ -22,8 +45,14 @@ const Home = () => {
     });
   }
 
-  const [visible, setVisible] = useState(false);
-  const [selectedFilm, setSelectedFilm] = useState();
+  const handleAddNotification = () => {
+    dispatch({
+      type: "success",
+      message: "Movie Added to List",
+      title: "Success",
+      position: "topL",
+    });
+  };
 
   return (
     <>
@@ -81,7 +110,37 @@ const Home = () => {
 
           </Tab>
           <Tab tabKey={2} tabName="Series" isDisabled={true}></Tab>
-          <Tab tabKey={3} tabName="My List" ></Tab>
+
+          <Tab tabKey={3} tabName="My List" >
+            <div className="ownListContent">
+              <div className="title">Your Library</div>
+              {myMovies && isAuthenticated ? (
+                <>
+                  <div className="ownThumbs">
+                    {
+                      myMovies.map((e) => {
+                        return (
+                          <img
+                            src={e.Thumnbnail}
+                            className="thumbnail"
+                            onClick={() => {
+                              setSelectedFilm(e);
+                              setVisible(true);
+                            }}
+                          ></img>
+                        );
+                      })}
+                  </div>
+                </>
+              ) : (
+                <div className="ownThumbs">
+                  You need to Authenicate To View Your Own list
+                </div>
+              )}
+            </div>
+
+
+          </Tab>
         </TabList>
 
         {selectedFilm &&
@@ -115,6 +174,13 @@ const Home = () => {
                           text='Add to my List'
                           theme='translucent'
                           type='button'
+                          onClick={async () => {
+                            await Moralis.Cloud.run("updateMyList", {
+                              addrs: account,
+                              newFav: selectedFilm.Name,
+                            });
+                            handleAddNotification();
+                          }}
                         />
                       </>
                     ) : (
