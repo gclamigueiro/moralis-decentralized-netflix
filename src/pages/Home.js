@@ -14,7 +14,6 @@ const Home = () => {
   const [selectedFilm, setSelectedFilm] = useState();
   const [myMovies, setMyMovies] = useState([]);
 
-
   const dispatch = useNotification();
 
   useEffect(() => {
@@ -54,6 +53,28 @@ const Home = () => {
     });
   };
 
+  const handleExistNotification = () => {
+    dispatch({
+      type: "warning",
+      message: "Movie already exist in your List",
+      title: "Warning",
+      position: "topL",
+    });
+  };
+
+  const addToMyList = async (movie) => {
+    if (!myMovies.find(m => m.Name === movie.Name)) {
+      await Moralis.Cloud.run("updateMyList", {
+        addrs: account,
+        newFav: movie.Name,
+      });
+      handleAddNotification();
+      setMyMovies([...myMovies, movie.Name]);
+    } else {
+      handleExistNotification();
+    }
+  }
+
   return (
     <>
       <div className='logo'>
@@ -73,18 +94,22 @@ const Home = () => {
               <p className='sceneDesc'>{movies[0].Description}</p>
 
               <div className='playButton'>
-                <Button
-                  icon='chevronRightX2'
-                  text='Play'
-                  theme='secondary'
-                  type='button'
-                />
-
+                <Link to='/player' state={movies[0].Movie}>
+                  <Button
+                    icon='chevronRightX2'
+                    text='Play'
+                    theme='secondary'
+                    type='button'
+                  />
+                </Link>
                 <Button
                   icon='plus'
                   text='Add to my List'
                   theme='translucent'
                   type='button'
+                  onClick={() => {
+                    addToMyList(movies[0]);
+                  }}
                 />
               </div>
             </div>
@@ -118,13 +143,14 @@ const Home = () => {
                 <>
                   <div className="ownThumbs">
                     {
-                      myMovies.map((e) => {
+                      myMovies.map((movie, index) => {
                         return (
                           <img
-                            src={e.Thumnbnail}
+                            key={movie.Movie + index}
+                            src={movie.Thumnbnail}
                             className="thumbnail"
                             onClick={() => {
-                              setSelectedFilm(e);
+                              setSelectedFilm(movie);
                               setVisible(true);
                             }}
                           ></img>
@@ -145,10 +171,12 @@ const Home = () => {
 
         {selectedFilm &&
           <div className='modal'>
-            <Modal onCloseButtonPressed={() => {
-              setSelectedFilm(null);
-              setVisible(false);
-            }}
+            <Modal
+              onCloseButtonPressed={() => {
+                setSelectedFilm(null);
+                setVisible(false);
+              }
+              }
               visible={visible}
               hasFooter={false}
               width={'1000px'}
@@ -174,12 +202,8 @@ const Home = () => {
                           text='Add to my List'
                           theme='translucent'
                           type='button'
-                          onClick={async () => {
-                            await Moralis.Cloud.run("updateMyList", {
-                              addrs: account,
-                              newFav: selectedFilm.Name,
-                            });
-                            handleAddNotification();
+                          onClick={() => {
+                            addToMyList(selectedFilm);
                           }}
                         />
                       </>
