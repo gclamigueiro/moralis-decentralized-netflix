@@ -18,3 +18,6 @@ https://moralis.io/moralis-projects-learn-to-build-a-web3-netflix-clone/
 - There are necessary two cloud function in Moralis for the "MyList" functionality worked properly. The functions are in the file `./cloudcode.js`
 
 
+## Demo
+
+https://moralis-decentralized-netflix.netlify.app/
