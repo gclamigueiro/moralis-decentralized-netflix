@@ -69,7 +69,7 @@ const Home = () => {
         newFav: movie.Name,
       });
       handleAddNotification();
-      setMyMovies([...myMovies, movie.Name]);
+      setMyMovies([...myMovies, movie]);
     } else {
       handleExistNotification();
     }
